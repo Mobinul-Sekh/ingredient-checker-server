@@ -12,7 +12,6 @@ import os
 
 app = FastAPI()
 load_dotenv()
-reader = easyocr.Reader(['en'])
 endpoint = "https://models.github.ai/inference"
 model = "openai/gpt-4.1"
 token = os.getenv("GITHUB_TOKEN")
@@ -38,7 +37,8 @@ async def ocr_image(data: ImageData):
   try:
     image_data = base64.b64decode(data.image)
     image = Image.open(io.BytesIO(image_data))
-
+    
+    reader = easyocr.Reader(['en'])
     extractedTextData = reader.readtext(image)
 
     text = ""
