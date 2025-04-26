@@ -31,7 +31,7 @@ def greet():
   return {"message": "Hello World, server is up!"}
 
 @app.post("/analyze-ingredients-affects")
-def ocr_image(data: ImageData):
+async def ocr_image(data: ImageData):
   print("=========================analyze api hit=========================")
   if not data.image:
     raise HTTPException(status_code=400, detail="Image is required")
@@ -60,7 +60,7 @@ def ocr_image(data: ImageData):
             - The ingredient field must content only the ingredient name
 
             Strictly return the output in this array of objects format (no extra text):
-            {{ingredient: data, description: data, effects: data, nutrition: data, statistics: data, regulations: data, considerations: data}}
+            {{ingredient: data, description: data, effects: `{positive: data, negative: data}`, nutrition: data, statistics: data, regulations: data, considerations: data}}
 
             Here are the ingredients: {text}"""
           )
@@ -69,8 +69,6 @@ def ocr_image(data: ImageData):
       top_p=1,
       model=model
     )
-
-    print(response.choices[0].message.content)
 
     return {
       "success": True,
