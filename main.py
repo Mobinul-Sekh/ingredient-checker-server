@@ -15,6 +15,7 @@ load_dotenv()
 endpoint = "https://models.github.ai/inference"
 model = "openai/gpt-4.1"
 token = os.getenv("GITHUB_TOKEN")
+PORT = os.getenv("PORT")
 
 client = ChatCompletionsClient(
   endpoint=endpoint,
@@ -38,7 +39,10 @@ async def ocr_image(data: ImageData):
     image_data = base64.b64decode(data.image)
     image = Image.open(io.BytesIO(image_data))
     
-    reader = easyocr.Reader(['en'])
+    max_size = (1024, 1024)
+    image.thumbnail(max_size, Image.ANTIALIAS)
+    
+    reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
     extractedTextData = reader.readtext(image)
 
     text = ""
