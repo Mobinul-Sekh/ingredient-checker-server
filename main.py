@@ -72,6 +72,8 @@ async def ocr_image(data: ImageData):
       top_p=1,
       model=model
     )
+    
+    print("response: ", response)
 
     return {
       "success": True,
@@ -79,4 +81,5 @@ async def ocr_image(data: ImageData):
       "data": response.choices[0].message.content,
     }
   except Exception as e:
+    print("error: ", e)
     raise HTTPException(status_code=500, detail=str(e))
