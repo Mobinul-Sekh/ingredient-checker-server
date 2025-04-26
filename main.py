@@ -5,7 +5,6 @@ from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
 from dotenv import load_dotenv
 import easyocr
-import cv2
 from PIL import Image
 import base64
 import io
