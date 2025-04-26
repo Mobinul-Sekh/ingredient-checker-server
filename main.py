@@ -37,10 +37,10 @@ async def ocr_image(data: ImageData):
 
   try:
     image_data = base64.b64decode(data.image)
-    image = Image.open(io.BytesIO(image_data))
     
+    image = Image.open(io.BytesIO(image_data))
     max_size = (1024, 1024)
-    image.thumbnail(max_size, Image.ANTIALIAS)
+    image.thumbnail(max_size, Image.Resampling.LANCZOS)
     
     reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
     extractedTextData = reader.readtext(image)
@@ -63,7 +63,7 @@ async def ocr_image(data: ImageData):
             - The ingredient field must content only the ingredient name
 
             Strictly return the output in this array of objects format (no extra text):
-            {{ingredient: data, description: data, effects: `{positive: data, negative: data}`, nutrition: data, statistics: data, regulations: data, considerations: data}}
+            {{ingredient: data, description: data, effects: `object with positive: data, negative: data`, nutrition: data, statistics: data, regulations: data, considerations: data}}
 
             Here are the ingredients: {text}"""
           )
@@ -73,7 +73,7 @@ async def ocr_image(data: ImageData):
       model=model
     )
     
-    print("response: ", response)
+    print("response: ", response.choices[0].message.content)
 
     return {
       "success": True,
