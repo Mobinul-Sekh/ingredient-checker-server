@@ -4,7 +4,6 @@ from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
 from dotenv import load_dotenv
-import easyocr
 from PIL import Image
 import base64
 import io
@@ -14,7 +13,6 @@ from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import Session
 import requests
 import pytesseract
-
 
 # task model interface
 class Task(Base):
@@ -33,7 +31,6 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 load_dotenv()
-# reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
 
 endpoint = "https://models.github.ai/inference"
 model = "openai/gpt-4.1"
@@ -121,15 +118,7 @@ async def process_ocr_image(
   db = SessionLocal()
 
   try:
-    # image_data = base64.b64decode(image_b64)
-    # image = Image.open(io.BytesIO(image_data))
-    # image = compress_image(image)
-    
-    # extractedTextData = reader.readtext(image)
-
-    # text = ""
-    # for data in extractedTextData:
-    #   text += data[1] + " "
+    image = compress_image(image)
 
     # uploaded_url = await upload_image_to_imgur(image_b64)
     # print("uplaoded_url ->", uploaded_url)
@@ -143,7 +132,7 @@ async def process_ocr_image(
         messages=[
           SystemMessage(""),
           UserMessage(
-            f"""Analyze the following list of ingredients and return structured, evidence-based health insights. For each ingredient, include:
+            f"""Analyze the following list of ingredients and return object of array, evidence-based health insights in array of objects. For each ingredient, include:
               - A short scientific or common description
               - Health effects (positive and negative, including known side effects or toxicity)
               - Nutritional impact (e.g., caloric value, sugar/sodium/fat content, glycemic index)
