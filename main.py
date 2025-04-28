@@ -31,17 +31,6 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 load_dotenv()
-reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
-
-endpoint = "https://models.github.ai/inference"
-model = "openai/gpt-4.1"
-token = os.getenv("GITHUB_TOKEN")
-PORT = os.getenv("PORT")
-
-client = ChatCompletionsClient(
-  endpoint=endpoint,
-  credential=AzureKeyCredential(token),
-)
 
 
 @app.get("/")
@@ -101,6 +90,18 @@ def process_ocr_image(
   db = SessionLocal()
 
   try:
+    reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
+
+    endpoint = "https://models.github.ai/inference"
+    model = "openai/gpt-4.1"
+    token = os.getenv("GITHUB_TOKEN")
+    PORT = os.getenv("PORT")
+
+    client = ChatCompletionsClient(
+      endpoint=endpoint,
+      credential=AzureKeyCredential(token),
+    )
+    
     image_data = base64.b64decode(image_b64)
     image = Image.open(io.BytesIO(image_data))
     image = compress_image(image)
