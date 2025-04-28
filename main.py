@@ -120,10 +120,10 @@ async def process_ocr_image(
   try:
     # uploaded_url = await upload_image_to_imgur(image_b64)
     # print("uplaoded_url ->", uploaded_url)
+    # image = compress_image(image)
 
     image_data = base64.b64decode(image_b64)
     image = Image.open(io.BytesIO(image_data))
-    image = compress_image(image)
     text = pytesseract.image_to_string(image)
 
     def call_openai():
@@ -131,7 +131,7 @@ async def process_ocr_image(
         messages=[
           SystemMessage(""),
           UserMessage(
-            f"""Analyze the following list of ingredients and return object of array, evidence-based health insights in array of objects. For each ingredient, include:
+            f"""Analyze the following list of ingredients and return structured, evidence-based health insights. For each ingredient, include:
               - A short scientific or common description
               - Health effects (positive and negative, including known side effects or toxicity)
               - Nutritional impact (e.g., caloric value, sugar/sodium/fat content, glycemic index)
@@ -140,7 +140,7 @@ async def process_ocr_image(
               - Any relevant dietary/medical considerations (e.g., allergens, carcinogens, preservatives, banned substances)
               - The ingredient field must content only the ingredient name
 
-              Strictly return an array of JSON objects:
+              Strictly return an array of objects:
               {{ingredient: ..., description: ..., effects: {{positive: ..., negative: ...}}, nutrition: ..., statistics: ..., regulations: ..., considerations: ...}}
 
               Here are the ingredients: {text}"""
