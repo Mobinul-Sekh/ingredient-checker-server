@@ -12,6 +12,8 @@ import os
 from db import engine, Base, get_db, SessionLocal
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import Session
+import requests
+import pytesseract
 
 
 # task model interface
@@ -31,6 +33,19 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 load_dotenv()
+# reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
+
+endpoint = "https://models.github.ai/inference"
+model = "openai/gpt-4.1"
+
+token = os.getenv("GITHUB_TOKEN")
+PORT = os.getenv("PORT")
+imgur_client_id = os.getenv("IMGUR_CLIENT_ID")
+
+client = ChatCompletionsClient(
+  endpoint=endpoint,
+  credential=AzureKeyCredential(token),
+)
 
 
 @app.get("/")
@@ -65,7 +80,7 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
   return {
     "id": task.id,
     "status": task.status,
-    "result": task.result
+    "result": str(task.result)
   }
 
 
@@ -83,34 +98,45 @@ def retry_call(func, retries=3):
       if attempt == retries - 1:
         raise e
 
-def process_ocr_image(
+async def upload_image_to_imgur(image_base64: str) -> str:
+  """Upload base64 image to imgur anonymously."""
+  url = "https://api.imgur.com/3/image"
+  headers = {
+    "Authorization": f"Client-ID {imgur_client_id}"
+  }
+  payload = {
+    "image": image_base64,
+    "type": "base64"
+  }
+  response = requests.post(url, headers=headers, data=payload)
+  if response.status_code == 200:
+    return response.json()["data"]["link"]
+  else:
+    raise Exception(f"Imgur upload failed: {response.text}")
+
+async def process_ocr_image(
   image_b64: str,
   task_id: int
 ):
   db = SessionLocal()
 
   try:
-    reader = easyocr.Reader(['en'], model_storage_directory='/tmp/easyocr')
-
-    endpoint = "https://models.github.ai/inference"
-    model = "openai/gpt-4.1"
-    token = os.getenv("GITHUB_TOKEN")
-    PORT = os.getenv("PORT")
-
-    client = ChatCompletionsClient(
-      endpoint=endpoint,
-      credential=AzureKeyCredential(token),
-    )
+    # image_data = base64.b64decode(image_b64)
+    # image = Image.open(io.BytesIO(image_data))
+    # image = compress_image(image)
     
+    # extractedTextData = reader.readtext(image)
+
+    # text = ""
+    # for data in extractedTextData:
+    #   text += data[1] + " "
+
+    # uploaded_url = await upload_image_to_imgur(image_b64)
+    # print("uplaoded_url ->", uploaded_url)
+
     image_data = base64.b64decode(image_b64)
     image = Image.open(io.BytesIO(image_data))
-    image = compress_image(image)
-    
-    extractedTextData = reader.readtext(image)
-
-    text = ""
-    for data in extractedTextData:
-      text += data[1] + " "
+    text = pytesseract.image_to_string(image)
 
     def call_openai():
       return client.complete(
@@ -126,13 +152,13 @@ def process_ocr_image(
               - Any relevant dietary/medical considerations (e.g., allergens, carcinogens, preservatives, banned substances)
               - The ingredient field must content only the ingredient name
 
-              Strictly return the output in this array of objects format (no extra text):
-              {{ingredient: data, description: data, effects: `object with positive: data, negative: data`, nutrition: data, statistics: data, regulations: data, considerations: data}}
+              Strictly return an array of JSON objects:
+              {{ingredient: ..., description: ..., effects: {{positive: ..., negative: ...}}, nutrition: ..., statistics: ..., regulations: ..., considerations: ...}}
 
               Here are the ingredients: {text}"""
             )
         ],
-        temperature=1,
+        temperature=0.7,
         top_p=1,
         model=model
       )
