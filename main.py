@@ -118,13 +118,12 @@ async def process_ocr_image(
   db = SessionLocal()
 
   try:
-    image = compress_image(image)
-
     # uploaded_url = await upload_image_to_imgur(image_b64)
     # print("uplaoded_url ->", uploaded_url)
 
     image_data = base64.b64decode(image_b64)
     image = Image.open(io.BytesIO(image_data))
+    image = compress_image(image)
     text = pytesseract.image_to_string(image)
 
     def call_openai():
