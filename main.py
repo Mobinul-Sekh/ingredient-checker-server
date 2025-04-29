@@ -47,6 +47,7 @@ client = ChatCompletionsClient(
 
 @app.get("/")
 def greet():
+  print("===========================home route hit===========================")
   return {"message": "Hello World, server is up!"}
 
 
@@ -56,6 +57,7 @@ async def ocr_image(
   background_task: BackgroundTasks,
   db: Session = Depends(get_db)
 ):
+  print("===========================analyze-ingredients-affects hit===========================")
   if not data.image:
     raise HTTPException(status_code=400, detail="Image is required")
 
@@ -71,6 +73,7 @@ async def ocr_image(
 
 @app.get("/get-analysis-result/{task_id}")
 def get_task(task_id: int, db: Session = Depends(get_db)):
+  print("===========================get-analysis-result hit===========================")
   task = db.query(Task).filter(Task.id == task_id).first()
   if not task:
       raise HTTPException(status_code=404, detail="Task not found")
