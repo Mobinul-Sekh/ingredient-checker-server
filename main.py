@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
@@ -30,6 +31,14 @@ class ImageData(BaseModel):
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
+
 load_dotenv()
 
 endpoint = "https://models.github.ai/inference"
