@@ -14,6 +14,7 @@ from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import Session
 import requests
 import pytesseract
+import time
 
 # task model interface
 class Task(Base):
@@ -22,6 +23,8 @@ class Task(Base):
   id = Column(Integer, primary_key=True, index=True)
   status = Column(String, default="processing")
   result = Column(String, nullable=True)
+  created_at = Column(String, nullable=True)
+  updated_at = Column(String, nullable=True)
 
 class ImageData(BaseModel):
   image: str
@@ -71,6 +74,8 @@ async def ocr_image(
     raise HTTPException(status_code=400, detail="Image is required")
 
   new_task = Task()
+  new_task.created_at = str(int(round(time.time() * 1000)))
+  new_task.updated_at = new_task.created_at
   db.add(new_task)
   db.commit()
   db.refresh(new_task)
@@ -85,13 +90,24 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
   print("===========================get-analysis-result hit===========================")
   task = db.query(Task).filter(Task.id == task_id).first()
   if not task:
-      raise HTTPException(status_code=404, detail="Task not found")
+    raise HTTPException(status_code=404, detail="Task not found")
   return {
     "id": task.id,
     "status": task.status,
     "result": str(task.result)
   }
 
+@app.get("/get-all-analysis-results")
+def get_all_results(db: Session = Depends(get_db)):
+  print("===========================get-all-results hit===========================")
+  tasks = db.query(Task).filter(Task.status == "completed").all()
+  if not tasks:
+    raise HTTPException(status_code=404, detail="Results not found")
+  return {
+    "message": "Results fetched successfully",
+    "success": True,
+    "data": tasks
+  }
 
 def compress_image(image: Image.Image, max_size=(1024, 1024)) -> Image.Image:
   """Resize while maintaining aspect ratio."""
@@ -167,6 +183,7 @@ async def process_ocr_image(
 
     task = db.query(Task).filter(Task.id == task_id).first()
     task.status = "completed"
+    task.updated_at = str(int(round(time.time() * 1000)))
     task.result = response.choices[0].message.content
     db.commit()
     
