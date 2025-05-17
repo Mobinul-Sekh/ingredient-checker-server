@@ -82,7 +82,7 @@ async def ocr_image(
 
   background_task.add_task(process_ocr_image, data.image, new_task.id)
 
-  return {"success": True, "message": "Processing started...", "task_id": str(new_task.id)}
+  return {"success": True, "message": "Processing started...", "task_id": new_task.id}
   
 
 @app.get("/get-analysis-result/{task_id}")
@@ -154,6 +154,8 @@ async def process_ocr_image(
     image = Image.open(io.BytesIO(image_data))
     text = pytesseract.image_to_string(image)
 
+    print("text ->", text)
+
     def call_openai():
       return client.complete(
         messages=[
@@ -171,6 +173,8 @@ async def process_ocr_image(
               Strictly return an array of objects:
               {{ingredient: ..., description: ..., effects: {{positive: ..., negative: ...}}, nutrition: ..., statistics: ..., regulations: ..., considerations: ...}}
 
+              Return empty array if there is no ingredient to be found.
+
               Here are the ingredients: {text}"""
             )
         ],
@@ -180,14 +184,13 @@ async def process_ocr_image(
       )
 
     response = retry_call(call_openai)
+    print("response: ", response.choices[0].message.content)
 
     task = db.query(Task).filter(Task.id == task_id).first()
     task.status = "completed"
     task.updated_at = str(int(round(time.time() * 1000)))
     task.result = response.choices[0].message.content
     db.commit()
-    
-    print("response: ", response.choices[0].message.content)
 
   except Exception as e:
     task = db.query(Task).filter(Task.id == task_id).first()
